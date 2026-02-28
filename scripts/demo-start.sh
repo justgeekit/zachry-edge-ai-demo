@@ -54,33 +54,33 @@ for i in $(seq 1 15); do
 done
 
 # ── 4. Ensure ollama-net Docker network exists ────────────────────────────────
-if ! docker network inspect "${OLLAMA_NETWORK}" > /dev/null 2>&1; then
+if ! sudo docker network inspect "${OLLAMA_NETWORK}" > /dev/null 2>&1; then
   info "Creating Docker network '${OLLAMA_NETWORK}'..."
-  docker network create "${OLLAMA_NETWORK}"
+  sudo docker network create "${OLLAMA_NETWORK}"
   ok "Network '${OLLAMA_NETWORK}' created"
 else
   ok "Docker network '${OLLAMA_NETWORK}' already exists"
 fi
 
 # ── 5. Connect ollama-gpu to ollama-net if needed ─────────────────────────────
-if docker network inspect "${OLLAMA_NETWORK}" --format '{{range .Containers}}{{.Name}} {{end}}' \
+if sudo docker network inspect "${OLLAMA_NETWORK}" --format '{{range .Containers}}{{.Name}} {{end}}' \
     | grep -qw "${OLLAMA_CONTAINER}"; then
   ok "${OLLAMA_CONTAINER} already connected to ${OLLAMA_NETWORK}"
 else
   info "Connecting ${OLLAMA_CONTAINER} to ${OLLAMA_NETWORK}..."
-  docker network connect "${OLLAMA_NETWORK}" "${OLLAMA_CONTAINER}"
+  sudo docker network connect "${OLLAMA_NETWORK}" "${OLLAMA_CONTAINER}"
   ok "${OLLAMA_CONTAINER} connected to ${OLLAMA_NETWORK}"
 fi
 
 # ── 6. Start open-webui container if not running ──────────────────────────────
-if docker ps --format '{{.Names}}' | grep -qw "${WEBUI_CONTAINER}"; then
+if sudo docker ps --format '{{.Names}}' | grep -qw "${WEBUI_CONTAINER}"; then
   ok "${WEBUI_CONTAINER} is already running — skipping launch"
 else
   # Remove any stopped container with the same name
-  docker rm -f "${WEBUI_CONTAINER}" > /dev/null 2>&1 || true
+  sudo docker rm -f "${WEBUI_CONTAINER}" > /dev/null 2>&1 || true
 
   info "Starting ${WEBUI_CONTAINER}..."
-  docker run -d \
+  sudo docker run -d \
     --name "${WEBUI_CONTAINER}" \
     --restart always \
     --network "${OLLAMA_NETWORK}" \
@@ -102,7 +102,7 @@ for i in $(seq 1 30); do
   fi
   if [ "$i" -eq 30 ]; then
     warn "Open WebUI did not respond after 30s — it may still be initialising."
-    warn "Check: docker logs ${WEBUI_CONTAINER}"
+    warn "Check: sudo docker logs ${WEBUI_CONTAINER}"
   fi
   sleep 1
 done

@@ -18,9 +18,9 @@ echo "╚═══════════════════════�
 echo -e "${RESET}"
 
 # Stop and remove open-webui
-if docker ps --format '{{.Names}}' | grep -qw "open-webui"; then
+if sudo docker ps --format '{{.Names}}' | grep -qw "open-webui"; then
   info "Stopping open-webui container..."
-  docker stop open-webui && docker rm open-webui
+  sudo docker stop open-webui && sudo docker rm open-webui
   ok "open-webui stopped and removed"
 else
   warn "open-webui container not running — skipping"
