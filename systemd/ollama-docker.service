@@ -1,0 +1,23 @@
+[Unit]
+Description=Ollama Service (GPU, Docker) v0.17.2
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStartPre=-/usr/bin/docker rm -f ollama-gpu
+ExecStart=/usr/bin/docker run --rm \
+  --name ollama-gpu \
+  --runtime=nvidia \
+  -e OLLAMA_MODELS=/data/models/ollama/models \
+  -e OLLAMA_HOST=0.0.0.0:11434 \
+  -p 127.0.0.1:11434:11434 \
+  -v /data/ollama-docker/models:/data/models \
+  -v /data/ollama-docker/logs:/data/logs \
+  ollama-jp5:v0.17.2 \
+  /usr/bin/ollama serve
+ExecStop=/usr/bin/docker stop ollama-gpu
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+# Ollama build archives (large — download separately from GitHub releases)
+*.tar.zst
+
+# Runtime data directories
+data/
+
+# Databases and logs
+*.db
+*.log
+
+# Environment files
+.env
+.env.*
