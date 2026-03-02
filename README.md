@@ -12,7 +12,7 @@ on NVIDIA Jetson AGX Orin edge hardware. No cloud connection required.
 This repository packages the full configuration, scripts, and documentation for
 a tabletop edge AI demo featuring:
 
-- **GLM-4.7-Flash** — a 16B MoE large language model running entirely on-device
+- **GLM-4.7-Flash** — a 29.9B MoE large language model running entirely on-device
   via [Ollama](https://ollama.com), answering student questions about construction
   careers, technology, and the industry
 - **Open WebUI** — a polished chat interface accessible from any browser on the
@@ -125,7 +125,7 @@ mkdir -p /data/open-webui
 ### 5. Pull the GLM-4.7-Flash model
 
 ```bash
-# Start a temporary Ollama container to pull the model
+# Start the ollama-docker service, then pull the model
 sudo systemctl start ollama-docker
 curl http://127.0.0.1:11434/api/pull -d '{"name":"glm-4.7-flash"}'
 ```
@@ -144,13 +144,14 @@ sudo systemctl enable ollama-docker
 docker network create ollama-net
 ```
 
-### 8. Set the system prompt in Open WebUI
+### 8. Configure the model in Open WebUI
 
 After the first start (see Daily Use below), go to:
 
-**Open WebUI → Admin Panel → Models → glm-4.7-flash → System Prompt**
+**Open WebUI → Admin Panel → Models → glm-4.7-flash**
 
-Copy and paste the prompt from [`docs/system-prompt.md`](docs/system-prompt.md).
+- Set it as the **default model**
+- Paste the system prompt from [`docs/system-prompt.md`](docs/system-prompt.md) into the **System Prompt** field
 
 ---
 
@@ -253,6 +254,7 @@ All three services can run simultaneously with headroom to spare.
 | Symptom | Fix |
 |---|---|
 | Open WebUI shows no models | Re-run `demo-start.sh` — network connect may be needed |
+| Open WebUI defaults to `llama3.2:3b` | Go to Admin Panel → Models → glm-4.7-flash → set as default |
 | Ollama not responding | `sudo systemctl status ollama-docker` → `sudo journalctl -u ollama-docker -n 50` |
 | Open WebUI hangs on startup | Check it was started with `RAG_EMBEDDING_ENGINE=ollama` env var (see start script) |
 | reCamera not reachable | Check `ip addr show usb1` — confirm `192.168.42.x` is up; check for MiFi USB conflict |
