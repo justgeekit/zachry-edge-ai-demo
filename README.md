@@ -185,7 +185,13 @@ To stop everything cleanly:
 
 1. Plug the reCamera into the Jetson via USB-C
 2. Confirm connectivity: `ping 192.168.42.1`
-3. The RTSP stream is available at: `rtsp://admin:admin@192.168.42.1:554/live`
+3. Open **http://192.168.42.1:1880** in a browser and click **Deploy** to start the RTSP stream
+4. Confirm port 554 is open: `timeout 2 bash -c 'echo >/dev/tcp/192.168.42.1/554' && echo "RTSP ready"`
+5. The RTSP stream is available at: `rtsp://admin:admin@192.168.42.1:554/live`
+
+> **RTSP requires Node-RED deploy:** The reCamera controls its RTSP stream via a
+> Node-RED flow. After every power cycle, open http://192.168.42.1:1880 and click
+> **Deploy** before running DetectNet. Without this step port 554 will be closed.
 
 > **IP conflict warning:** The Verizon MiFi5510L USB tether also uses the
 > `192.168.42.x` subnet. Do **not** use both USB devices simultaneously.
@@ -193,16 +199,32 @@ To stop everything cleanly:
 
 ### Run object detection
 
+First, grant the Docker container access to the display:
+
 ```bash
-sudo docker run --runtime nvidia -it --rm \
+xhost +local:docker
+```
+
+Then launch DetectNet:
+
+```bash
+sudo docker run --runtime nvidia --rm \
   -e DISPLAY=$DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v /data/jetson-inference/networks:/usr/local/bin/networks \
+  --network host \
   dustynv/jetson-inference:r35.4.1 \
-  detectnet rtsp://admin:admin@192.168.42.1:554/live
+  detectnet --input-codec=h264 rtsp://admin:admin@192.168.42.1:554/live
 ```
 
 This runs NVIDIA's DetectNet on the live camera feed, drawing bounding boxes
-around detected objects in real time using the Jetson GPU.
+around detected objects in real time using the Jetson GPU. Inference runs at
+~4ms per frame (~240fps capable) on the Orin GPU.
+
+> **Model cache:** The `-v /data/jetson-inference/networks` mount points to a
+> pre-downloaded SSD-Mobilenet-v2 model and its TensorRT engine. Without this
+> mount the container downloads the model (~65MB) and rebuilds the TRT engine
+> on every run (adds several minutes of startup time).
 
 ---
 
@@ -226,7 +248,8 @@ suggested prompts.
 
 **Computer vision transition:**
 > "Now let's show you what the camera sees. This is real-time object detection —
-> the AI is identifying everything in the frame, 15 frames per second, on-device."
+> the AI is identifying everything in the frame, on-device, with 4 millisecond
+> inference. That's faster than the blink of an eye."
 
 Run the `detectnet` command above. Point the reCamera at people, tools, or
 equipment in the room.
@@ -258,6 +281,8 @@ All three services can run simultaneously with headroom to spare.
 | Ollama not responding | `sudo systemctl status ollama-docker` → `sudo journalctl -u ollama-docker -n 50` |
 | Open WebUI hangs on startup | Check it was started with `RAG_EMBEDDING_ENGINE=ollama` env var (see start script) |
 | reCamera not reachable | Check `ip addr show usb1` — confirm `192.168.42.x` is up; check for MiFi USB conflict |
+| DetectNet fails — port 554 closed | Open http://192.168.42.1:1880 → click **Deploy** to start the RTSP stream |
+| DetectNet window does not appear | Run `xhost +local:docker` before the `docker run` command |
 | `docker: Error response... nvidia runtime` | `sudo systemctl restart docker` then retry |
 | jtop not found | `sudo pip3 install jetson-stats` |
 
